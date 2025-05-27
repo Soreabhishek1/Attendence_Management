@@ -15,63 +15,53 @@ namespace Attendence_Management.Data_Layer
             con.Open();
 
             string createTables = @"
-                CREATE TABLE admins (
-                    admin_id INT IDENTITY(1,1) PRIMARY KEY,
-                    name NVARCHAR(100) NOT NULL,
-                    email NVARCHAR(100) UNIQUE NOT NULL,
-                    password_hash NVARCHAR(255) NOT NULL
-                );
+                CREATE TABLE Users (
+    UserID INT PRIMARY KEY,  -- Manually insert unique IDs
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) NOT NULL,
+    Phone NVARCHAR(15),
+    Role NVARCHAR(20) CHECK (Role IN ('Employee', 'Student')) NOT NULL,
+    Department NVARCHAR(50),
+    DesignationOrCourse NVARCHAR(100),
+    Password NVARCHAR(100) NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    IsActive BIT DEFAULT 1
+);
+CREATE TABLE Admins (
+    AdminID INT PRIMARY KEY,
+    FullName NVARCHAR(100) NOT NULL,
+    Username NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) NOT NULL,
+    Password NVARCHAR(100) NOT NULL,
+    Phone NVARCHAR(15),
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
+CREATE TABLE Attendance (
+    AttendanceID INT PRIMARY KEY,
+    UserID INT NOT NULL,
+    AttendanceDate DATE NOT NULL,
+    Status NVARCHAR(10) CHECK (Status IN ('Present', 'Absent', 'Leave')) NOT NULL,
+    MarkedByAdminID INT NOT NULL,
+    Timestamp DATETIME DEFAULT GETDATE(),
 
-                CREATE TABLE groups (
-                    group_id INT IDENTITY(1,1) PRIMARY KEY,
-                    group_name NVARCHAR(100) NOT NULL
-                );
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (MarkedByAdminID) REFERENCES Admins(AdminID)
+);
+CREATE TABLE Notifications (
+    NotificationID INT PRIMARY KEY,
+    Message NVARCHAR(255) NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    TargetRole NVARCHAR(20) CHECK (TargetRole IN ('Employee', 'Student', 'All')) DEFAULT 'All'
+);
+CREATE TABLE LoginLogs (
+    LogID INT PRIMARY KEY,
+    UserOrAdmin NVARCHAR(10) CHECK (UserOrAdmin IN ('User', 'Admin')),
+    AccountID INT NOT NULL,
+    LoginTime DATETIME DEFAULT GETDATE(),
+    LogoutTime DATETIME
+);
 
-                CREATE TABLE users (
-                    user_id INT IDENTITY(1,1) PRIMARY KEY,
-                    name NVARCHAR(100) NOT NULL,
-                    email NVARCHAR(100) UNIQUE NOT NULL,
-                    role NVARCHAR(20) NOT NULL CHECK (role IN ('employee', 'student')),
-                    group_id INT,
-                    FOREIGN KEY (group_id) REFERENCES groups(group_id)
-                );
-
-                CREATE TABLE attendance (
-                    attendance_id INT IDENTITY(1,1) PRIMARY KEY,
-                    user_id INT,
-                    date DATE NOT NULL,
-                    status NVARCHAR(10) NOT NULL CHECK (status IN ('present', 'absent', 'leave')),
-                    marked_by INT,
-                    FOREIGN KEY (user_id) REFERENCES users(user_id),
-                    FOREIGN KEY (marked_by) REFERENCES admins(admin_id)
-                );
-
-                CREATE TABLE logins (
-                    login_id INT IDENTITY(1,1) PRIMARY KEY,
-                    user_id INT,
-                    login_time DATETIME NOT NULL,
-                    logout_time DATETIME,
-                    FOREIGN KEY (user_id) REFERENCES users(user_id)
-                );
-
-                CREATE TABLE leaves (
-                    leave_id INT IDENTITY(1,1) PRIMARY KEY,
-                    user_id INT,
-                    start_date DATE NOT NULL,
-                    end_date DATE NOT NULL,
-                    reason NVARCHAR(MAX),
-                    status NVARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-                    FOREIGN KEY (user_id) REFERENCES users(user_id)
-                );
-
-                CREATE TABLE notifications (
-                    notification_id INT IDENTITY(1,1) PRIMARY KEY,
-                    user_id INT,
-                    message NVARCHAR(MAX) NOT NULL,
-                    created_at DATETIME DEFAULT GETDATE(),
-                    is_read BIT DEFAULT 0,
-                    FOREIGN KEY (user_id) REFERENCES users(user_id)
-                );
+               
             ";
 
             SqlCommand cmd = new SqlCommand(createTables, con);
